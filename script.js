@@ -25,7 +25,7 @@ $(document).ready(function(){
       function loadRepoCallback(gitHubRequest) {
         let repolist = JSON.parse(gitHubRequest.responseText);
         //console.log(repolist);
-        let nm = ""; //repolist.name; //name
+        let nm = ""; //
         let ht = ""; //
         //console.log(repolist[0].name);
         //console.log(repolist[0].html_url);
