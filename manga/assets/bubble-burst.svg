@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" width="600" height="380">
+  <!-- Comic "burst" speech balloon. The PNG-bubble style loads this as an <img>
+       and types ASS-style text inside the safe rectangle (see data-safe below).
+       Swap this file for real bubble art; keep the viewBox + data-safe inset. -->
+  <defs>
+    <filter id="ink" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="0" flood-color="#000" flood-opacity="1"/>
+    </filter>
+  </defs>
+  <g filter="url(#ink)">
+    <polygon fill="#ffffff" stroke="#0a0a0a" stroke-width="9" stroke-linejoin="round"
+      points="300,8 348,70 430,42 432,128 520,128 470,196 548,236 458,262 486,344
+              388,318 360,372 300,318 240,372 212,318 114,344 142,262 52,236 130,196
+              80,128 168,128 170,42 252,70"/>
+  </g>
+  <!-- safe text area (player reads this): x=120 y=120 w=360 h=150 -->
+  <rect data-safe="1" x="120" y="120" width="360" height="150" fill="none"/>
+</svg>
