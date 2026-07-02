@@ -60,12 +60,20 @@ The wall is built from bricks. Each brick shows **one face** of a kanji:
   turn it off in Settings when you want to test yourself.
 - **Win-screen shortcuts** — Play again, bump the difficulty, or add more
   kanji with one tap.
+- **Tap the review tray to reset** — clicking a brick you've placed in the
+  tray cancels the current word so you can start a different kanji.
+- **Reading hints on hover** — hovering On-yomi / Kun-yomi in “Now matching”
+  explains “the Chinese-derived reading” / “the native Japanese reading”.
+- **Phonetic (romaji) readings** — collection cards show each on-yomi and
+  kun-yomi with its Latin pronunciation in italics (こ *(ko)*). The
+  `phonetic()` helper is language-pluggable for future non-English UIs.
 
 ## Files
 
 - `index.html` — page markup and layout
 - `css/style.css` — kawaii styling, brick faces, animations
 - `js/data.js` — the kanji dataset (JLPT N5 starter set) — edit to add your own
+- `js/romaji.js` — kana → phonetic (Hepburn romaji) transliteration
 - `js/srs.js` — spaced-repetition scoring + weighted sampling (localStorage)
 - `js/audio.js` — Web Audio xylophone / click / win sounds
 - `js/game.js` — game logic: board build, matching, review tray, gravity, HUD

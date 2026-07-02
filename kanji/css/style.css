@@ -314,7 +314,22 @@ details.acc > summary:hover { background: #fdfaf2; }
   margin: 0 -6px; padding-left: 6px; padding-right: 6px;
 }
 .target-list li.now::after { content: " ← find this"; font-size: .72rem; color: var(--accent); }
-.target-list .ttype { flex: 1; font-size: .82rem; }
+.target-list li[title] { cursor: help; }
+.target-list .ttype { flex: 1; font-size: .82rem; position: relative; }
+/* custom hover bubble (in addition to the native title tooltip) */
+.target-list .ttip {
+  position: absolute;
+  left: 0; bottom: 130%;
+  z-index: 5;
+  width: max-content; max-width: 220px;
+  background: var(--ink); color: #fff;
+  font-size: .72rem; font-weight: 600;
+  padding: 5px 9px; border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.2);
+  opacity: 0; transform: translateY(4px);
+  pointer-events: none; transition: opacity .15s ease, transform .15s ease;
+}
+.target-list li:hover .ttip { opacity: 1; transform: translateY(0); }
 .target-links { display: flex; gap: 8px; }
 .target-links a {
   flex: 1; text-align: center; text-decoration: none;
@@ -337,6 +352,7 @@ details.acc > summary:hover { background: #fdfaf2; }
 .wc-r.r-on  { color: #5c8ec9; }
 .wc-r.r-kun { color: #4fa87d; }
 .wc-r.r-en  { color: #b5924b; font-family: "Baloo 2"; font-weight: 700; }
+.wc-r .rom { color: var(--ink-soft); font-weight: 400; font-size: .92em; }
 .wc-ex {
   display: flex; align-items: flex-start; gap: 7px;
   padding: 5px 0; border-top: 1px dashed var(--line);
