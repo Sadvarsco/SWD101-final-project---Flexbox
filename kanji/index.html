@@ -3,64 +3,99 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kanji Collapse — a matching game for learning kanji</title>
+  <title>Kanji Collapse — a kawaii kanji matching game</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Raleway:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Kosugi+Maru&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
   <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
   <div class="app">
     <header class="titlebar">
-      <h1>KANJI COLLAPSE</h1>
-      <span class="sub">Click a kanji, then click every reading &amp; meaning that matches. Clear the wall.</span>
+      <h1>🐱 Kanji&nbsp;Collapse</h1>
+      <p class="sub">Pick a kanji, gather its readings &amp; meaning in the tray, watch the word float away.</p>
     </header>
 
     <main class="layout">
-      <!-- The brick wall -->
-      <section class="board-wrap">
+      <!-- Play area -->
+      <section class="play">
+        <div class="hud">
+          <span class="chip">🌟 <b id="score">0</b></span>
+          <span class="chip">🧩 <b id="left">0 / 0</b></span>
+          <span class="chip">🎚️ <b id="modeLabel">Normal</b></span>
+        </div>
+
         <div id="board" class="board" aria-label="Kanji brick wall"></div>
+
+        <div class="shelf-wrap">
+          <div class="shelf-title">✨ review tray ✨</div>
+          <div id="shelf" class="shelf" aria-label="Review tray"></div>
+        </div>
+
+        <div id="hint" class="hint"></div>
       </section>
 
-      <!-- Side panel: controls, target, score, legend -->
+      <!-- Side panel -->
       <aside class="panel">
-        <div class="controls">
-          <button id="newGame" type="button" class="primary">↻ New wall</button>
-          <label class="level">
-            Kanji
-            <select id="level">
-              <option value="6">6 · easy</option>
-              <option value="8" selected>8 · normal</option>
-              <option value="12">12 · hard</option>
-              <option value="16">16 · full set</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="stats">
-          <div class="stat"><span class="k">Score</span><span id="score" class="v">0</span></div>
-          <div class="stat"><span class="k">Kanji left</span><span id="left" class="v">0 / 0</span></div>
-          <div class="stat"><span class="k">Wrong</span><span id="wrong" class="v">0</span></div>
-        </div>
-
-        <div class="target-panel">
-          <h2>Current target</h2>
+        <div class="card target-card">
+          <h2>Now matching</h2>
           <div id="target" class="target"></div>
         </div>
 
-        <div class="legend">
+        <div class="card">
+          <h2>⚙️ Settings</h2>
+          <div class="row2">
+            <label class="field">Mode
+              <select id="mode">
+                <option value="easy">Easy</option>
+                <option value="normal">Normal</option>
+                <option value="hard">Hard</option>
+              </select>
+            </label>
+            <label class="field">Kanji
+              <select id="size">
+                <option value="6">6</option>
+                <option value="8">8</option>
+                <option value="12">12</option>
+                <option value="16">16</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="switch"><input type="checkbox" id="sound" checked> 🔊 Sound</label>
+
+          <fieldset class="labels">
+            <legend>Show labels on bricks</legend>
+            <label><input type="checkbox" id="lbl-all" checked> <b>All</b></label>
+            <label><input type="checkbox" id="lbl-kanji" checked> Kanji</label>
+            <label><input type="checkbox" id="lbl-on" checked> On-yomi</label>
+            <label><input type="checkbox" id="lbl-kun" checked> Kun-yomi</label>
+            <label><input type="checkbox" id="lbl-en" checked> English</label>
+          </fieldset>
+
+          <div class="row2">
+            <button id="newGame" type="button" class="primary">↻ New wall</button>
+            <button id="reset" type="button" class="ghost">Reset progress</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>📈 Progress <span class="hint-small">(saved on this device)</span></h2>
+          <div id="progress" class="progress"></div>
+        </div>
+
+        <div class="card legend-card">
           <h2>Brick faces</h2>
-          <ul>
-            <li><span class="dot t-kanji"></span>Kanji — the character</li>
-            <li><span class="dot t-on"></span>On-yomi — カタカナ reading</li>
-            <li><span class="dot t-kun"></span>Kun-yomi — ひらがな reading</li>
-            <li><span class="dot t-en"></span>English — meaning</li>
+          <ul class="legend">
+            <li><span class="dot t-kanji"></span><b>Kanji</b> — the character (a meaning-bearing symbol borrowed from Chinese)</li>
+            <li><span class="dot t-on"></span><b>On-yomi</b> — the Chinese-derived reading, shown in <span class="jp">カタカナ</span></li>
+            <li><span class="dot t-kun"></span><b>Kun-yomi</b> — the native Japanese reading, shown in <span class="jp">ひらがな</span></li>
+            <li><span class="dot t-en"></span><b>English</b> — the meaning <span class="muted">(more languages later)</span></li>
           </ul>
+          <p class="muted">Open a kanji's <b>Jisho</b> / <b>Wiktionary</b> links (in “Now matching”) for readings, examples &amp; history.</p>
         </div>
       </aside>
     </main>
-
-    <div id="hint" class="hint"></div>
 
     <footer class="foot">
       <p>SWD101 · a kanji-learning brick-collapse game · JLPT N5 starter set</p>
@@ -68,6 +103,8 @@
   </div>
 
   <script src="js/data.js"></script>
+  <script src="js/srs.js"></script>
+  <script src="js/audio.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
