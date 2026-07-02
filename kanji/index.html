@@ -23,6 +23,7 @@
           <span class="chip">🌟 <b id="score">0</b></span>
           <span class="chip">🧩 <b id="left">0 / 0</b></span>
           <span class="chip">🎚️ <b id="modeLabel">Normal</b></span>
+          <button id="hintBtn" type="button" class="chip chip-btn" title="Highlight a correct brick (−5 points, no first-try star)">💡 Hint −5</button>
         </div>
 
         <div id="board" class="board" aria-label="Kanji brick wall"></div>
@@ -43,57 +44,70 @@
         </div>
 
         <div class="card">
-          <h2>⚙️ Settings</h2>
-          <div class="row2">
-            <label class="field">Mode
-              <select id="mode">
-                <option value="easy">Easy</option>
-                <option value="normal">Normal</option>
-                <option value="hard">Hard</option>
-              </select>
-            </label>
-            <label class="field">Kanji
-              <select id="size">
-                <option value="6">6</option>
-                <option value="8">8</option>
-                <option value="12">12</option>
-                <option value="16">16</option>
-              </select>
-            </label>
+          <h2>🍡 Collection <span class="hint-small">(words you cleared — tap “history” to dig deeper)</span></h2>
+          <div id="collection" class="collection"></div>
+        </div>
+
+        <details class="card acc" id="settingsAcc">
+          <summary><h2>⚙️ Settings</h2></summary>
+          <div class="acc-body">
+            <div class="row2">
+              <label class="field">Mode
+                <select id="mode">
+                  <option value="easy">Easy</option>
+                  <option value="normal">Normal</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+              <label class="field">Kanji
+                <select id="size">
+                  <option value="6">6</option>
+                  <option value="8">8</option>
+                  <option value="12">12</option>
+                  <option value="16">16</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="switch"><input type="checkbox" id="sound" checked> 🔊 Sound</label>
+
+            <fieldset class="labels">
+              <legend>Show labels on bricks</legend>
+              <label><input type="checkbox" id="lbl-all" checked> <b>All</b></label>
+              <label><input type="checkbox" id="lbl-kanji" checked> Kanji</label>
+              <label><input type="checkbox" id="lbl-on" checked> On-yomi</label>
+              <label><input type="checkbox" id="lbl-kun" checked> Kun-yomi</label>
+              <label><input type="checkbox" id="lbl-en" checked> English</label>
+            </fieldset>
+
+            <div class="row2">
+              <button id="newGame" type="button" class="primary">↻ New wall</button>
+              <button id="reset" type="button" class="ghost">Reset progress</button>
+            </div>
+
+            <p class="muted mode-note">Hard mode: no gray-out help, and bricks can show <b>any</b> of a kanji's readings or meanings (月 might appear as ガツ or “month”).</p>
           </div>
+        </details>
 
-          <label class="switch"><input type="checkbox" id="sound" checked> 🔊 Sound</label>
-
-          <fieldset class="labels">
-            <legend>Show labels on bricks</legend>
-            <label><input type="checkbox" id="lbl-all" checked> <b>All</b></label>
-            <label><input type="checkbox" id="lbl-kanji" checked> Kanji</label>
-            <label><input type="checkbox" id="lbl-on" checked> On-yomi</label>
-            <label><input type="checkbox" id="lbl-kun" checked> Kun-yomi</label>
-            <label><input type="checkbox" id="lbl-en" checked> English</label>
-          </fieldset>
-
-          <div class="row2">
-            <button id="newGame" type="button" class="primary">↻ New wall</button>
-            <button id="reset" type="button" class="ghost">Reset progress</button>
+        <details class="card acc" open>
+          <summary><h2>📈 Progress <span class="hint-small">(saved on this device)</span></h2></summary>
+          <div class="acc-body">
+            <div id="progress" class="progress"></div>
           </div>
-        </div>
+        </details>
 
-        <div class="card">
-          <h2>📈 Progress <span class="hint-small">(saved on this device)</span></h2>
-          <div id="progress" class="progress"></div>
-        </div>
-
-        <div class="card legend-card">
-          <h2>Brick faces</h2>
-          <ul class="legend">
-            <li><span class="dot t-kanji"></span><b>Kanji</b> — the character (a meaning-bearing symbol borrowed from Chinese)</li>
-            <li><span class="dot t-on"></span><b>On-yomi</b> — the Chinese-derived reading, shown in <span class="jp">カタカナ</span></li>
-            <li><span class="dot t-kun"></span><b>Kun-yomi</b> — the native Japanese reading, shown in <span class="jp">ひらがな</span></li>
-            <li><span class="dot t-en"></span><b>English</b> — the meaning <span class="muted">(more languages later)</span></li>
-          </ul>
-          <p class="muted">Open a kanji's <b>Jisho</b> / <b>Wiktionary</b> links (in “Now matching”) for readings, examples &amp; history.</p>
-        </div>
+        <details class="card acc">
+          <summary><h2>🧱 Brick faces</h2></summary>
+          <div class="acc-body">
+            <ul class="legend">
+              <li><span class="dot t-kanji"></span><b>Kanji</b> — the character (a meaning-bearing symbol borrowed from Chinese)</li>
+              <li><span class="dot t-on"></span><b>On-yomi</b> — the Chinese-derived reading, shown in <span class="jp">カタカナ</span></li>
+              <li><span class="dot t-kun"></span><b>Kun-yomi</b> — the native Japanese reading, shown in <span class="jp">ひらがな</span></li>
+              <li><span class="dot t-en"></span><b>English</b> — the meaning <span class="muted">(more languages later)</span></li>
+            </ul>
+            <p class="muted">Cleared words land in the <b>Collection</b> with example sentences for both readings, plus history &amp; related kanji.</p>
+          </div>
+        </details>
       </aside>
     </main>
 

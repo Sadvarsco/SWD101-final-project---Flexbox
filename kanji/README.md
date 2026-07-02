@@ -29,16 +29,25 @@ The wall is built from bricks. Each brick shows **one face** of a kanji:
 - **Difficulty modes**
   - *Easy* — a wrong pick just marks that brick; your progress is kept.
   - *Normal* — a wrong pick resets the current selection (gentle penalty).
-  - *Hard* — like normal, plus the gray-out guidance is turned off.
-- **Review tray** — completed words gather and line up before floating away.
-- **Sound** — synthesized xylophone dings on the lift-up (mutable in settings).
+  - *Hard* — reset on wrong, no gray-out guidance, and bricks may show **any**
+    of a kanji's readings/meanings (月 might appear as ガツ or “month”).
+- **Review tray** — picked bricks gather and line up before floating away.
+- **Collection** — every cleared word becomes a review card: readings, an
+  example sentence for the **on-yomi** usage and one for the **kun-yomi**
+  usage (kanji highlighted), expandable to show **etymology** and
+  **related kanji**, with Jisho / Wiktionary links.
+- **Hint button** — highlights a correct brick for −5 points (and forfeits the
+  first-try star for that word).
+- **Sound** — synthesized xylophone dings on the lift-up, and a randomly
+  composed **station-departure-style jingle** when you clear the wall
+  (inspired by Japanese hassha melodies, generated fresh each win — nothing
+  copyrighted). Mutable in settings.
 - **Label toggles** — show/hide the type label on bricks, all at once or per type.
-- **Reference links** — every kanji links to **Jisho** and **Wiktionary** for
-  readings, examples and history.
 - **Anki-style learning (SRS)** — each kanji has a “how well you know it” score
   saved on your device. A clean first-try clear bumps it up; a wrong pick bumps
   it down. Weaker words appear more often; stronger ones appear rarely (but
   never disappear entirely). Track it in the **Progress** panel.
+- **Collapsible panels** — Settings, Progress and Brick faces fold away.
 
 ## Files
 
@@ -51,14 +60,22 @@ The wall is built from bricks. Each brick shows **one face** of a kanji:
 
 ## Editing the kanji list
 
-Add entries to `js/data.js`:
+Add entries to `js/data.js`. Readings/meanings are arrays — the first item is
+the primary (used in Easy/Normal); extras only appear in Hard mode:
 
 ```js
-{ kanji: "火", on: "カ", kun: "ひ", en: "fire" }
+{
+  kanji: "火",
+  on: ["カ"], kun: ["ほのお"], en: ["fire"],
+  onEx:  { jp: "火曜日に会いましょう。", word: "火曜日", read: "かようび", en: "Let's meet on Tuesday." },
+  kunEx: { jp: "火がもえています。", word: "火", read: "ひ", en: "The fire is burning." },
+  etym: "A pictograph of rising flames.",
+  rel: ["水", "灯", "炎"]
+}
 ```
 
-Keep reading strings unique across the set so no two different kanji share an
-identical brick face. Leave a field empty (`""`) to omit that brick for a kanji.
+Keep every reading/meaning string unique across the whole file so no two kanji
+share an identical brick face (the test suite checks this).
 
 ## Ideas for later
 
