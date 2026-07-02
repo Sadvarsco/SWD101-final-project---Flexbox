@@ -35,9 +35,10 @@ The wall is built from bricks. Each brick shows **one face** of a kanji:
   - *Normal* — a wrong pick marks that brick (no reset); once you match a
     category, the rest of that category grays out. Meaning-image behind each
     kanji. Manual hint available.
-  - *Hard* — reset on wrong, no gray-out guidance, **no hint button**, and
-    bricks may show **any** of a kanji's readings/meanings (月 might appear as
-    ガツ or “month”).
+  - *Hard* — **pick tiles in any order** (no kanji-first rule), reset on wrong,
+    no gray-out guidance, **no hint button**, no meaning-images, and bricks may
+    show **any** of a kanji's readings/meanings (月 might appear as ガツ or
+    “month”).
 - **Review tray** — picked bricks gather and line up before floating away.
 - **Collection** — every cleared word becomes a review card: readings, an
   example sentence for the **on-yomi** usage and one for the **kun-yomi**
@@ -67,12 +68,21 @@ The wall is built from bricks. Each brick shows **one face** of a kanji:
 - **Phonetic (romaji) readings** — collection cards show each on-yomi and
   kun-yomi with its Latin pronunciation in italics (こ *(ko)*). The
   `phonetic()` helper is language-pluggable for future non-English UIs.
+- **Chord finish** — the completed word's bricks rise together once and a
+  bright major chord plays before they vanish.
+- **“Want it easier?” nudge** — after several misses on a board, a gentle
+  prompt offers an easier difficulty or fewer kanji (once per board).
+- **🐾 Kanji of the Day** — a kawaii, cat-themed popup with a kanji's readings
+  (+romaji), meaning, stroke count / grade / JLPT level, history, example
+  sentences, and a fun “did you know?” tidbit. Auto-shows once a day; the
+  header button opens it anytime (with a 🎲 shuffle).
 
 ## Files
 
 - `index.html` — page markup and layout
 - `css/style.css` — kawaii styling, brick faces, animations
-- `js/data.js` — the kanji dataset (JLPT N5 starter set) — edit to add your own
+- `js/data.js` — the kanji dataset (readings, examples, etymology, trivia,
+  stroke counts) — edit to add your own
 - `js/romaji.js` — kana → phonetic (Hepburn romaji) transliteration
 - `js/srs.js` — spaced-repetition scoring + weighted sampling (localStorage)
 - `js/audio.js` — Web Audio xylophone / click / win sounds
