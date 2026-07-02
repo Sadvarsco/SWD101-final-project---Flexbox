@@ -547,20 +547,21 @@ function completeSet() {
   state.groupsCleared++;
   flashHint("✓ " + kanji + "  +" + gained + (clean ? "  ⭐first try!" : ""));
 
-  // The tray fills as you pick (1,2,3,4 down); on completion every brick
-  // rises together ONCE and a single chord plays before they vanish.
-  const rise = () => {
-    group.forEach((tile) => {
+  // Each brick lifts in turn with an ascending xylophone ding
+  // (ding·ding·ding·ding…), then a final chord caps it off as they vanish.
+  group.forEach((tile, i) => {
+    setTimeout(() => {
       if (!tile.el) return;
       tile.el.style.transition = "transform .5s cubic-bezier(.3,1.4,.5,1), opacity .5s ease";
       tile.el.style.transform = "translateY(-165%) scale(.62)";
       tile.el.style.opacity = "0";
-    });
-    KanjiAudio.chord();
-  };
-  setTimeout(rise, 160); // brief settle so the last pick lands first
+      KanjiAudio.ding(i);
+    }, i * LIFT_STAGGER);
+  });
+  const chordAt = (group.length - 1) * LIFT_STAGGER + 300; // a beat after the last ding
+  setTimeout(() => KanjiAudio.chord(), chordAt);
 
-  const done = 160 + 620;
+  const done = chordAt + 520;
   setTimeout(() => {
     group.forEach((tile) => {
       tile.tstate = "cleared";

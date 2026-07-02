@@ -68,8 +68,9 @@ The wall is built from bricks. Each brick shows **one face** of a kanji:
 - **Phonetic (romaji) readings** — collection cards show each on-yomi and
   kun-yomi with its Latin pronunciation in italics (こ *(ko)*). The
   `phonetic()` helper is language-pluggable for future non-English UIs.
-- **Chord finish** — the completed word's bricks rise together once and a
-  bright major chord plays before they vanish.
+- **Chord finish** — the completed word's bricks lift one at a time with an
+  ascending xylophone run (ding·ding·ding·ding…), then a bright major chord
+  caps it off as they vanish.
 - **“Want it easier?” nudge** — after several misses on a board, a gentle
   prompt offers an easier difficulty or fewer kanji (once per board).
 - **🐾 Kanji of the Day** — a kawaii, cat-themed popup with a kanji's readings
