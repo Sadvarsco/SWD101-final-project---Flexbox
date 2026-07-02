@@ -11,15 +11,22 @@
  *     show etymology and related kanji.
  *
  * Difficulty:
- *   easy   — a wrong pick just marks that brick; your progress is kept.
- *   normal — a wrong pick resets the current selection (gentle penalty).
- *   hard   — reset on wrong, no gray-out guidance, AND bricks may show any
- *            of a kanji's readings/meanings (e.g. 月 as ガツ or "month").
+ *   easy   — fully guided. After the kanji you must find the on-yomi, then
+ *            kun-yomi, then English, one step at a time (everything else is
+ *            grayed). Wrong picks just mark that brick; after 3 wrongs OR
+ *            30s stuck on a step, the game auto-hints (free, but forfeits
+ *            the first-try star).
+ *   normal — a wrong pick marks that brick (no reset); once you match a
+ *            category, the rest of that category grays out.
+ *   hard   — reset on wrong, no gray-out guidance, no hint button, AND
+ *            bricks may show any of a kanji's readings/meanings (月 as ガツ
+ *            or "month").
  *
  * Learning:
  *   Each kanji has an SRS score (see srs.js). First-try-clean clears bump it
- *   up; wrong picks bump it down. Weak words appear more often. Hints cost
- *   5 points and forfeit the first-try star for that word.
+ *   up; wrong picks bump it down. Weak words appear more often. The manual
+ *   hint costs 5 points; both manual and auto hints forfeit the first-try
+ *   star for that word.
  */
 
 /* ------------------------------------------------------------------ *
@@ -38,6 +45,10 @@ const CLEAR_POINTS = 20;
 const FIRST_TRY_BONUS = 15;
 const HINT_COST = 5;
 const PENALTY = { easy: 5, normal: 10, hard: 18 };
+const STEP_ORDER = ["on", "kun", "en"]; // guided easy-mode sequence
+const AUTO_HINT_WRONGS = 3;
+// var (not const) so tests can shorten the watchdog via window.AUTO_HINT_MS
+var AUTO_HINT_MS = 30000;
 const LIFT_STAGGER = 190; // ms between bricks lifting away
 
 const SETTINGS_KEY = "kc.settings.v1";
@@ -54,6 +65,8 @@ const state = {
   staged: [],          // tiles picked for the current set, in pick order
   hadWrong: false,     // a wrong pick happened during the current set
   hintUsed: false,     // a hint was used during the current set
+  step: null,          // easy mode: which type the player must find next
+  wrongStreak: 0,      // easy mode: wrongs since the last right answer
   collection: [],      // entries cleared this session (newest first)
   score: 0,
   groupsTotal: 0,
@@ -70,6 +83,7 @@ const settings = {
 };
 
 let boardEl, shelfEl, els;
+let stepTimerId = null;
 
 /* ------------------------------------------------------------------ *
  * Small helpers
@@ -296,6 +310,51 @@ function unstageAll() {
 }
 
 /* ------------------------------------------------------------------ *
+ * Easy-mode guided steps: on-yomi -> kun-yomi -> English, with an
+ * automatic hint after 3 wrongs or 30 seconds without a right answer.
+ * ------------------------------------------------------------------ */
+
+function clearStepTimer() {
+  if (stepTimerId) { clearTimeout(stepTimerId); stepTimerId = null; }
+}
+
+function armStepTimer() {
+  clearStepTimer();
+  if (state.mode === "easy" && state.step && state.activeGroup !== null) {
+    stepTimerId = setTimeout(autoHint, AUTO_HINT_MS);
+  }
+}
+
+// Advance to the next type the player must find (or null when done).
+function setNextStep() {
+  const rem = wallMatches(state.activeGroup);
+  state.step = STEP_ORDER.find((t) => rem.some((m) => m.type === t)) || null;
+  state.wrongStreak = 0;
+  armStepTimer();
+}
+
+// Free hint the game gives on its own — pulses the right brick. No point
+// cost, but it forfeits the first-try star (you were shown the answer).
+function autoHint() {
+  clearStepTimer();
+  if (state.busy || state.activeGroup === null) return;
+  const rem = wallMatches(state.activeGroup).filter(
+    (t) => !t.wrong && (state.mode !== "easy" || t.type === state.step)
+  );
+  if (!rem.length) return;
+  const target = rem[0];
+  state.hintUsed = true;
+  state.wrongStreak = 0;
+  KanjiAudio.hint();
+  target.el.classList.remove("hint-pulse");
+  void target.el.offsetWidth;
+  target.el.classList.add("hint-pulse");
+  setTimeout(() => target.el && target.el.classList.remove("hint-pulse"), 2200);
+  flashHint("Here's a little help! ✨ (no first-try ⭐)");
+  armStepTimer();
+}
+
+/* ------------------------------------------------------------------ *
  * Click handling
  * ------------------------------------------------------------------ */
 
@@ -322,9 +381,15 @@ function onTileClick(tile) {
   if (tile.groupId === state.activeGroup) {
     KanjiAudio.click();
     stageTile(tile);
+    if (wallMatches(state.activeGroup).length === 0) {
+      updateGrayout();
+      updateTarget();
+      completeSet();
+      return;
+    }
+    if (state.mode === "easy") setNextStep();
     updateGrayout();
     updateTarget();
-    if (wallMatches(state.activeGroup).length === 0) completeSet();
     return;
   }
 
@@ -338,10 +403,16 @@ function beginSet(kanjiTile) {
   state.staged = [];
   KanjiAudio.click();
   stageTile(kanjiTile);
+  // A lone kanji (all its matches already gone) clears on its own.
+  if (wallMatches(state.activeGroup).length === 0) {
+    updateGrayout();
+    updateTarget();
+    completeSet();
+    return;
+  }
+  if (state.mode === "easy") setNextStep();
   updateGrayout();
   updateTarget();
-  // A lone kanji (all its matches already gone) clears on its own.
-  if (wallMatches(state.activeGroup).length === 0) completeSet();
 }
 
 function handleWrong(tile) {
@@ -357,16 +428,19 @@ function handleWrong(tile) {
   tile.el.classList.add("shake");
   setTimeout(() => tile.el && tile.el.classList.remove("shake"), 400);
 
-  if (state.mode === "easy") {
-    // Don't reset — just mark this wrong brick out for the rest of the set.
+  if (state.mode !== "hard") {
+    // Easy/Normal: don't reset — mark this wrong brick out for the set.
     tile.wrong = true;
     tile.el.classList.add("wrong");
-    state.score = Math.max(0, state.score - PENALTY.easy);
+    state.score = Math.max(0, state.score - PENALTY[state.mode]);
     flashHint("Not a match — try another. 💦");
     updateHUD();
+    if (state.mode === "easy" && ++state.wrongStreak >= AUTO_HINT_WRONGS) {
+      autoHint();
+    }
   } else {
-    state.score = Math.max(0, state.score - PENALTY[state.mode]);
-    flashHint("Oops! Selection reset (−" + PENALTY[state.mode] + ").");
+    state.score = Math.max(0, state.score - PENALTY.hard);
+    flashHint("Oops! Selection reset (−" + PENALTY.hard + ").");
     endSet(); // returns staged tiles, clears state
   }
 }
@@ -385,12 +459,16 @@ function useHint() {
     kanjis.sort((a, b) => SRS.get(a.kanji) - SRS.get(b.kanji));
     target = kanjis[0];
   } else {
-    const rem = wallMatches(state.activeGroup).filter((t) => !t.wrong);
+    const rem = wallMatches(state.activeGroup).filter(
+      (t) => !t.wrong && (state.mode !== "easy" || t.type === state.step)
+    );
     if (!rem.length) return;
     target = rem[Math.floor(Math.random() * rem.length)];
   }
   state.score = Math.max(0, state.score - HINT_COST);
   state.hintUsed = true; // forfeits the first-try star for this set
+  state.wrongStreak = 0;
+  armStepTimer(); // reset the easy-mode watchdog after a manual hint
   KanjiAudio.hint();
   target.el.classList.remove("hint-pulse");
   void target.el.offsetWidth;
@@ -405,6 +483,7 @@ function useHint() {
  * ------------------------------------------------------------------ */
 
 function completeSet() {
+  clearStepTimer();
   state.busy = true;
   const group = state.staged.slice();
   const kanji = group[0].kanji;
@@ -459,10 +538,13 @@ function endSet() {
 }
 
 function resetSetState() {
+  clearStepTimer();
   state.activeGroup = null;
   state.staged = [];
   state.hadWrong = false;
   state.hintUsed = false;
+  state.step = null;
+  state.wrongStreak = 0;
   // clear any easy-mode "wrong" marks so those bricks work again next set
   state.tiles.forEach((t) => {
     if (t.wrong) { t.wrong = false; t.el && t.el.classList.remove("wrong"); }
@@ -492,10 +574,10 @@ function applyGravity() {
 
 function updateGrayout() {
   const guide = state.mode !== "hard"; // hard mode = no visual guidance
-  // Easy mode: once a category is matched (say, the kun-yomi), every other
-  // brick of that category grays out too — the hunt narrows as you go.
+  // Normal mode: once a category is matched (say, the kun-yomi), every
+  // other brick of that category grays out too — the hunt narrows.
   const gotTypes = new Set(
-    state.mode === "easy"
+    state.mode === "normal"
       ? state.staged.filter((t) => t.type !== "kanji").map((t) => t.type)
       : []
   );
@@ -503,8 +585,14 @@ function updateGrayout() {
     if (tile.tstate !== "wall" || !tile.el) return;
     let disabled = false;
     if (guide) {
-      if (state.activeGroup === null) disabled = tile.type !== "kanji";
-      else disabled = tile.type === "kanji" || gotTypes.has(tile.type);
+      if (state.activeGroup === null) {
+        disabled = tile.type !== "kanji";
+      } else if (state.mode === "easy") {
+        // Guided: only bricks of the current step type are live.
+        disabled = tile.type !== state.step;
+      } else {
+        disabled = tile.type === "kanji" || gotTypes.has(tile.type);
+      }
     }
     if (tile.wrong) disabled = true;
     tile.el.classList.toggle("disabled", disabled);
@@ -596,7 +684,8 @@ function updateTarget() {
   const stagedIds = new Set(state.staged.map((t) => t.id));
   const rows = allMatches(state.activeGroup).map((m) => {
     const got = stagedIds.has(m.id);
-    return '<li class="' + (got ? "got" : "") + '">' +
+    const now = state.mode === "easy" && !got && m.type === state.step;
+    return '<li class="' + (got ? "got" : "") + (now ? " now" : "") + '">' +
       '<span class="dot ' + TYPES[m.type].cls + '"></span>' +
       '<span class="ttype">' + TYPES[m.type].label + "</span>" +
       '<span class="tval jp">' + (got ? m.value : "❓") + "</span></li>";
@@ -687,7 +776,8 @@ function win() {
 
 function newGame() {
   state.mode = settings.mode;
-  document.body.classList.toggle("mode-easy", state.mode === "easy");
+  document.body.classList.toggle("show-pics", state.mode !== "hard");
+  els.hintBtn.style.display = state.mode === "hard" ? "none" : "";
   state.score = 0;
   state.groupsCleared = 0;
   state.busy = false;

@@ -138,7 +138,7 @@ body {
 }
 .face, .tag { position: relative; z-index: 1; }
 
-/* Easy mode: a meaning-image peeks out from behind the kanji. */
+/* Easy & Normal: a meaning-image peeks out from behind the kanji. */
 .pic {
   display: none;
   position: absolute;
@@ -151,8 +151,8 @@ body {
   pointer-events: none;
   z-index: 0;
 }
-.mode-easy .t-kanji .pic { display: flex; }
-.mode-easy .t-kanji .face {
+.show-pics .t-kanji .pic { display: flex; }
+.show-pics .t-kanji .face {
   text-shadow: 0 0 6px #fff, 0 0 12px #fff; /* keep the kanji readable over the art */
 }
 .tile.shelved .pic { font-size: 2em; }
@@ -308,6 +308,12 @@ details.acc > summary:hover { background: #fdfaf2; }
   color: var(--ink-soft);
 }
 .target-list li.got { color: var(--ink); font-weight: 700; }
+.target-list li.now {
+  color: var(--accent); font-weight: 700;
+  background: var(--accent-soft); border-radius: 8px;
+  margin: 0 -6px; padding-left: 6px; padding-right: 6px;
+}
+.target-list li.now::after { content: " ← find this"; font-size: .72rem; color: var(--accent); }
 .target-list .ttype { flex: 1; font-size: .82rem; }
 .target-links { display: flex; gap: 8px; }
 .target-links a {

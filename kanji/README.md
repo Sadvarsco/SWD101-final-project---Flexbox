@@ -27,17 +27,24 @@ The wall is built from bricks. Each brick shows **one face** of a kanji:
 ## Features
 
 - **Difficulty modes**
-  - *Easy* — a wrong pick just marks that brick; your progress is kept.
-  - *Normal* — a wrong pick resets the current selection (gentle penalty).
-  - *Hard* — reset on wrong, no gray-out guidance, and bricks may show **any**
-    of a kanji's readings/meanings (月 might appear as ガツ or “month”).
+  - *Easy (guided)* — after the kanji you find its readings **in sequence**:
+    on-yomi → kun-yomi → English, one step at a time (everything else grays
+    out). Wrong picks just mark that brick; after **3 wrongs or 30 seconds**
+    stuck on a step, the game gives an **automatic hint** (free, but it
+    forfeits the first-try star). Meaning-image behind each kanji.
+  - *Normal* — a wrong pick marks that brick (no reset); once you match a
+    category, the rest of that category grays out. Meaning-image behind each
+    kanji. Manual hint available.
+  - *Hard* — reset on wrong, no gray-out guidance, **no hint button**, and
+    bricks may show **any** of a kanji's readings/meanings (月 might appear as
+    ガツ or “month”).
 - **Review tray** — picked bricks gather and line up before floating away.
 - **Collection** — every cleared word becomes a review card: readings, an
   example sentence for the **on-yomi** usage and one for the **kun-yomi**
   usage (kanji highlighted), expandable to show **etymology** and
   **related kanji**, with Jisho / Wiktionary links.
-- **Hint button** — highlights a correct brick for −5 points (and forfeits the
-  first-try star for that word).
+- **Hint button** (easy & normal) — highlights a correct brick for −5 points
+  (and forfeits the first-try star for that word).
 - **Sound** — synthesized xylophone dings on the lift-up, and a randomly
   composed **station-departure-style jingle** when you clear the wall
   (inspired by Japanese hassha melodies, generated fresh each win — nothing
