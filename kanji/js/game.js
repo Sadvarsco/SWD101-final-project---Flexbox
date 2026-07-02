@@ -6,16 +6,20 @@
  *   - Pick its matching readings/meaning. Each pick glides down into the
  *     "review tray" and lines up so you can read the whole word together.
  *   - When the set is complete it lifts away one brick at a time with an
- *     ascending xylophone run, and the wall collapses to fill the gaps.
+ *     ascending xylophone run, and the word joins your COLLECTION — a card
+ *     with example sentences (on-yomi AND kun-yomi usage), expandable to
+ *     show etymology and related kanji.
  *
  * Difficulty:
  *   easy   — a wrong pick just marks that brick; your progress is kept.
  *   normal — a wrong pick resets the current selection (gentle penalty).
- *   hard   — like normal, plus the gray-out guidance is turned off.
+ *   hard   — reset on wrong, no gray-out guidance, AND bricks may show any
+ *            of a kanji's readings/meanings (e.g. 月 as ガツ or "month").
  *
  * Learning:
  *   Each kanji has an SRS score (see srs.js). First-try-clean clears bump it
- *   up; wrong picks bump it down. Weak words appear more often.
+ *   up; wrong picks bump it down. Weak words appear more often. Hints cost
+ *   5 points and forfeit the first-try star for that word.
  */
 
 /* ------------------------------------------------------------------ *
@@ -23,15 +27,16 @@
  * ------------------------------------------------------------------ */
 
 const TYPES = {
-  kanji: { label: "Kanji",    cls: "t-kanji", order: 0 },
-  on:    { label: "On-yomi",  cls: "t-on",    order: 1 },
-  kun:   { label: "Kun-yomi", cls: "t-kun",   order: 2 },
-  en:    { label: "English",  cls: "t-en",    order: 3 }
+  kanji: { label: "Kanji",    cls: "t-kanji" },
+  on:    { label: "On-yomi",  cls: "t-on" },
+  kun:   { label: "Kun-yomi", cls: "t-kun" },
+  en:    { label: "English",  cls: "t-en" }
 };
 
 const COLS = 8;
 const CLEAR_POINTS = 20;
 const FIRST_TRY_BONUS = 15;
+const HINT_COST = 5;
 const PENALTY = { easy: 5, normal: 10, hard: 18 };
 const LIFT_STAGGER = 190; // ms between bricks lifting away
 
@@ -47,7 +52,9 @@ const state = {
   mode: "normal",
   activeGroup: null,
   staged: [],          // tiles picked for the current set, in pick order
-  hadWrong: false,     // did a wrong pick happen during the current set?
+  hadWrong: false,     // a wrong pick happened during the current set
+  hintUsed: false,     // a hint was used during the current set
+  collection: [],      // entries cleared this session (newest first)
   score: 0,
   groupsTotal: 0,
   groupsCleared: 0,
@@ -74,6 +81,16 @@ function shuffle(arr) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+function entryOf(kanji) { return KANJI.find((e) => e.kanji === kanji); }
+
+// Readings/meanings are arrays; easy/normal use the primary [0], hard mode
+// may surface any of them (multiple on-yomi, kun-yomi, meanings).
+function pickFace(list, hard) {
+  if (!Array.isArray(list)) list = list ? [list] : [];
+  if (list.length === 0) return "";
+  return hard ? list[Math.floor(Math.random() * list.length)] : list[0];
 }
 
 function jishoURL(k) { return "https://jisho.org/search/" + encodeURIComponent(k + " #kanji"); }
@@ -119,13 +136,13 @@ function applyLabelClasses() {
  * Build & lay out the wall
  * ------------------------------------------------------------------ */
 
-function buildTiles(count) {
+function buildTiles(count, hard) {
   const chosen = SRS.sample(KANJI, count);
   const tiles = [];
   let id = 0;
   chosen.forEach((entry, groupId) => {
     ["kanji", "on", "kun", "en"].forEach((type) => {
-      const value = type === "kanji" ? entry.kanji : entry[type];
+      const value = type === "kanji" ? entry.kanji : pickFace(entry[type], hard);
       if (!value) return;
       tiles.push({
         id: id++, groupId, type, value,
@@ -145,6 +162,28 @@ function layout(tiles) {
     tile.row = rows - 1 - fromBottom;
   });
   return rows;
+}
+
+// Shrink a face's font until the text genuinely fits its brick — length
+// thresholds don't cut it because wide glyphs (w, m) overflow early.
+function fitFace(face) {
+  const box = face.parentElement;
+  if (!box) return;
+  face.style.fontSize = "";
+  const max = box.clientWidth - 8;
+  if (max <= 0) return;
+  let size = parseFloat(getComputedStyle(face).fontSize);
+  let guard = 14;
+  while (face.scrollWidth > max && size > 7 && guard--) {
+    size *= 0.88;
+    face.style.fontSize = size.toFixed(1) + "px";
+  }
+}
+
+function fitAllFaces() {
+  state.tiles.forEach((t) => {
+    if (t.el && t.tstate !== "cleared") fitFace(t.el.querySelector(".face"));
+  });
 }
 
 function makeTileEl(tile) {
@@ -190,6 +229,7 @@ function render() {
     boardEl.appendChild(makeTileEl(tile));
     positionTile(tile);
   });
+  requestAnimationFrame(fitAllFaces);
 }
 
 /* ------------------------------------------------------------------ *
@@ -218,9 +258,11 @@ function stageTile(tile) {
   state.staged.push(tile);
   reparentFLIP(tile.el, shelfEl, () => {
     tile.el.classList.add("shelved");
+    tile.el.classList.remove("hint-pulse");
     tile.el.style.left = tile.el.style.top = "";
     tile.el.style.width = tile.el.style.height = "";
   });
+  fitFace(tile.el.querySelector(".face")); // tray bricks are smaller
 }
 
 function unstageAll() {
@@ -234,6 +276,7 @@ function unstageAll() {
       tile.el.style.width = (100 / COLS) + "%";
       tile.el.style.height = (100 / state.rows) + "%";
     });
+    fitFace(tile.el.querySelector(".face"));
   });
   state.staged = [];
 }
@@ -277,6 +320,7 @@ function onTileClick(tile) {
 function beginSet(kanjiTile) {
   state.activeGroup = kanjiTile.groupId;
   state.hadWrong = false;
+  state.hintUsed = false;
   state.staged = [];
   KanjiAudio.click();
   stageTile(kanjiTile);
@@ -314,6 +358,35 @@ function handleWrong(tile) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Hint
+ * ------------------------------------------------------------------ */
+
+function useHint() {
+  if (state.busy) return;
+  let target = null;
+  if (state.activeGroup === null) {
+    // Point at a kanji worth starting with (weakest SRS first).
+    const kanjis = state.tiles.filter((t) => t.tstate === "wall" && t.type === "kanji");
+    if (!kanjis.length) return;
+    kanjis.sort((a, b) => SRS.get(a.kanji) - SRS.get(b.kanji));
+    target = kanjis[0];
+  } else {
+    const rem = wallMatches(state.activeGroup).filter((t) => !t.wrong);
+    if (!rem.length) return;
+    target = rem[Math.floor(Math.random() * rem.length)];
+  }
+  state.score = Math.max(0, state.score - HINT_COST);
+  state.hintUsed = true; // forfeits the first-try star for this set
+  KanjiAudio.hint();
+  target.el.classList.remove("hint-pulse");
+  void target.el.offsetWidth;
+  target.el.classList.add("hint-pulse");
+  setTimeout(() => target.el && target.el.classList.remove("hint-pulse"), 2200);
+  flashHint("Hint! −" + HINT_COST + " (no first-try ⭐ this word)");
+  updateHUD();
+}
+
+/* ------------------------------------------------------------------ *
  * Completing / ending a set
  * ------------------------------------------------------------------ */
 
@@ -321,15 +394,16 @@ function completeSet() {
   state.busy = true;
   const group = state.staged.slice();
   const kanji = group[0].kanji;
+  const clean = !state.hadWrong && !state.hintUsed;
 
   let gained = group.length * CLEAR_POINTS;
-  if (!state.hadWrong) {
+  if (clean) {
     gained += FIRST_TRY_BONUS;
     SRS.bump(kanji, +1); // clean first-try clear = you know it a bit better
   }
   state.score += gained;
   state.groupsCleared++;
-  flashHint("✓ " + group[0].value + "  +" + gained + (state.hadWrong ? "" : "  ⭐first try!"));
+  flashHint("✓ " + group[0].value + "  +" + gained + (clean ? "  ⭐first try!" : ""));
 
   // Lift each brick away in order with an ascending ding.
   group.forEach((tile, i) => {
@@ -349,6 +423,7 @@ function completeSet() {
       if (tile.el) tile.el.remove();
     });
     state.tiles = state.tiles.filter((t) => t.tstate !== "cleared");
+    addToCollection(kanji);
     resetSetState();
     applyGravity();
     state.tiles.forEach(positionTile);
@@ -373,6 +448,7 @@ function resetSetState() {
   state.activeGroup = null;
   state.staged = [];
   state.hadWrong = false;
+  state.hintUsed = false;
   // clear any easy-mode "wrong" marks so those bricks work again next set
   state.tiles.forEach((t) => {
     if (t.wrong) { t.wrong = false; t.el && t.el.classList.remove("wrong"); }
@@ -415,6 +491,63 @@ function updateGrayout() {
 }
 
 /* ------------------------------------------------------------------ *
+ * Collection — cleared words stay around as review cards
+ * ------------------------------------------------------------------ */
+
+function addToCollection(kanji) {
+  if (!state.collection.includes(kanji)) state.collection.unshift(kanji);
+  renderCollection();
+}
+
+// Sentence HTML: insert the reading after the example word and highlight
+// every occurrence of the kanji character.
+function exampleHTML(entry, ex, typeCls, typeLabel) {
+  if (!ex) return "";
+  const withReading = ex.jp.replace(ex.word, ex.word + "（" + ex.read + "）");
+  const highlighted = withReading.split(entry.kanji).join('<span class="hl">' + entry.kanji + "</span>");
+  return '<div class="wc-ex">' +
+    '<span class="dot ' + typeCls + '" title="' + typeLabel + '"></span>' +
+    '<span class="wc-jp jp">' + highlighted + "</span>" +
+    '<span class="wc-en">' + ex.en + "</span>" +
+    "</div>";
+}
+
+function renderCollection() {
+  if (state.collection.length === 0) {
+    els.collection.innerHTML = '<p class="muted">Cleared words gather here so you can review them. 🍡</p>';
+    return;
+  }
+  els.collection.innerHTML = state.collection.map((k) => {
+    const e = entryOf(k);
+    if (!e) return "";
+    const rel = (e.rel || []).map((r) =>
+      '<a class="rel-chip jp" href="' + jishoURL(r) + '" target="_blank" rel="noopener">' + r + "</a>"
+    ).join("");
+    return '<div class="wordcard">' +
+      '<div class="wc-head">' +
+        '<span class="wc-k jp">' + e.kanji + "</span>" +
+        '<span class="wc-readings">' +
+          '<span class="wc-r r-on jp">' + e.on.join("・") + "</span>" +
+          '<span class="wc-r r-kun jp">' + e.kun.join("・") + "</span>" +
+          '<span class="wc-r r-en">' + e.en.join(", ") + "</span>" +
+        "</span>" +
+      "</div>" +
+      exampleHTML(e, e.onEx, "t-on", "On-yomi usage") +
+      exampleHTML(e, e.kunEx, "t-kun", "Kun-yomi usage") +
+      '<details class="wc-more">' +
+        "<summary>history &amp; connections</summary>" +
+        '<p class="wc-etym">' + e.etym + "</p>" +
+        '<div class="wc-rel"><span class="muted">related:</span>' + rel + "</div>" +
+        '<div class="wc-links">' +
+          '<a href="' + jishoURL(e.kanji) + '" target="_blank" rel="noopener">📖 Jisho</a>' +
+          '<a href="' + wiktURL(e.kanji) + '" target="_blank" rel="noopener">📜 Wiktionary</a>' +
+        "</div>" +
+      "</details>" +
+    "</div>";
+  }).join("");
+}
+
+/* ------------------------------------------------------------------ *
  * HUD / target / progress
  * ------------------------------------------------------------------ */
 
@@ -430,18 +563,18 @@ function updateTarget() {
     panel.innerHTML = '<p class="target-empty">Tap a <b>Kanji</b> brick to start a word. 🐱</p>';
     return;
   }
-  const kanjiTile = state.tiles.find((t) => t.groupId === state.activeGroup && t.type === "kanji");
-  const ch = kanjiTile ? kanjiTile.value : state.staged[0].value;
+  const kanjiTile = state.staged[0];
+  const ch = kanjiTile.value;
   const stagedIds = new Set(state.staged.map((t) => t.id));
   const rows = allMatches(state.activeGroup).map((m) => {
     const got = stagedIds.has(m.id);
     return '<li class="' + (got ? "got" : "") + '">' +
       '<span class="dot ' + TYPES[m.type].cls + '"></span>' +
       '<span class="ttype">' + TYPES[m.type].label + "</span>" +
-      '<span class="tval">' + (got ? m.value : "❓") + "</span></li>";
+      '<span class="tval jp">' + (got ? m.value : "❓") + "</span></li>";
   }).join("");
   panel.innerHTML =
-    '<div class="target-kanji">' + ch + "</div>" +
+    '<div class="target-kanji jp">' + ch + "</div>" +
     '<ul class="target-list">' + rows + "</ul>" +
     '<div class="target-links">' +
       '<a href="' + jishoURL(ch) + '" target="_blank" rel="noopener">📖 Jisho</a>' +
@@ -451,9 +584,8 @@ function updateTarget() {
 
 function renderProgress() {
   const inPlay = new Set(state.tiles.map((t) => t.kanji));
-  // Show everything you've touched, plus what's currently on the wall.
   const rows = KANJI
-    .map((e) => ({ k: e.kanji, en: e.en, s: SRS.get(e.kanji), live: inPlay.has(e.kanji) }))
+    .map((e) => ({ k: e.kanji, en: e.en[0], s: SRS.get(e.kanji), live: inPlay.has(e.kanji) }))
     .filter((r) => r.s > 0 || r.live)
     .sort((a, b) => b.s - a.s || a.k.localeCompare(b.k));
 
@@ -465,7 +597,7 @@ function renderProgress() {
     let stars = "";
     for (let i = 0; i < SRS.MAX; i++) stars += i < r.s ? "★" : "☆";
     return '<div class="prow' + (r.live ? " live" : "") + '">' +
-      '<span class="pk">' + r.k + "</span>" +
+      '<span class="pk jp">' + r.k + "</span>" +
       '<span class="pen">' + r.en + "</span>" +
       '<span class="pstars">' + stars + "</span></div>";
   }).join("");
@@ -484,12 +616,13 @@ function flashHint(msg) {
  * ------------------------------------------------------------------ */
 
 function win() {
-  KanjiAudio.win();
+  KanjiAudio.win(); // random station-departure jingle 🚃
   boardEl.innerHTML =
     '<div class="win">' +
-    '<div class="win-cat">🐱</div>' +
+    '<div class="win-cat">🚃🐱</div>' +
     "<h2>Wall cleared!</h2>" +
     "<p>Score <b>" + state.score + "</b></p>" +
+    '<p class="muted">departure jingle playing…</p>' +
     "</div>";
   updateTarget();
 }
@@ -501,7 +634,7 @@ function newGame() {
   state.busy = false;
   resetSetState();
 
-  const built = buildTiles(settings.size);
+  const built = buildTiles(settings.size, state.mode === "hard");
   state.tiles = built.tiles;
   state.groupsTotal = built.groupsTotal;
   state.rows = layout(state.tiles);
@@ -511,6 +644,7 @@ function newGame() {
   updateTarget();
   updateHUD();
   renderProgress();
+  renderCollection();
 }
 
 /* ------------------------------------------------------------------ *
@@ -552,6 +686,7 @@ function wireControls() {
     });
   });
   els.newGame.addEventListener("click", newGame);
+  els.hintBtn.addEventListener("click", useHint);
   els.reset.addEventListener("click", () => {
     SRS.reset(); renderProgress(); flashHint("Progress reset. 🌸");
   });
@@ -571,6 +706,7 @@ document.addEventListener("DOMContentLoaded", () => {
     target: document.getElementById("target"),
     hint: document.getElementById("hint"),
     progress: document.getElementById("progress"),
+    collection: document.getElementById("collection"),
     mode: document.getElementById("mode"),
     size: document.getElementById("size"),
     sound: document.getElementById("sound"),
@@ -580,6 +716,7 @@ document.addEventListener("DOMContentLoaded", () => {
     lbl_kun: document.getElementById("lbl-kun"),
     lbl_en: document.getElementById("lbl-en"),
     newGame: document.getElementById("newGame"),
+    hintBtn: document.getElementById("hintBtn"),
     reset: document.getElementById("reset")
   };
 
@@ -587,4 +724,11 @@ document.addEventListener("DOMContentLoaded", () => {
   syncControls();
   wireControls();
   newGame();
+
+  // Refit brick text when the board changes size.
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(fitAllFaces, 120);
+  });
 });
