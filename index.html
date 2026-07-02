@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projects · Sadre Scott</title>
+  <style>
+    :root { --ink:#2d2a32; --muted:#6c6675; --line:#e7e3ee; --accent:#7c5cff; }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; min-height:100vh; color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(160deg,#f7f5ff,#eefaf5);
+      display:flex; align-items:center; justify-content:center; padding:32px;
+    }
+    .wrap { width:100%; max-width:720px; }
+    h1 { margin:0 0 4px; font-size:2rem; }
+    .sub { margin:0 0 28px; color:var(--muted); }
+    .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
+    a.card {
+      display:block; text-decoration:none; color:inherit;
+      background:#fff; border:1px solid var(--line); border-radius:16px;
+      padding:20px; transition:transform .12s ease, box-shadow .15s ease;
+      box-shadow:0 6px 18px rgba(80,70,120,.06);
+    }
+    a.card:hover { transform:translateY(-3px); box-shadow:0 12px 26px rgba(80,70,120,.14); border-color:var(--accent); }
+    .emoji { font-size:2rem; }
+    .card h2 { margin:8px 0 4px; font-size:1.15rem; }
+    .card p { margin:0; color:var(--muted); font-size:.9rem; line-height:1.4; }
+    footer { margin-top:28px; color:var(--muted); font-size:.82rem; }
+    footer a { color:var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Projects</h1>
+    <p class="sub">A few things built in this repo — each lives in its own folder.</p>
+
+    <div class="grid">
+      <a class="card" href="kanji/">
+        <div class="emoji">🐱</div>
+        <h2>Kanji Collapse</h2>
+        <p>A kawaii brick-matching game for learning JLPT&nbsp;N5 kanji.</p>
+      </a>
+      <a class="card" href="manga/">
+        <div class="emoji">💬</div>
+        <h2>Manga Layer</h2>
+        <p>A motion-comic prototype — word-synced speech bubbles over a manga panel.</p>
+      </a>
+      <a class="card" href="flexbox-profile/">
+        <div class="emoji">🧑‍💻</div>
+        <h2>Flexbox Profile</h2>
+        <p>The original SWD101 flexbox profile page.</p>
+      </a>
+    </div>
+
+    <footer>SWD101 · <a href="https://github.com/Sadvarsco/SWD101-final-project---Flexbox">source on GitHub</a></footer>
+  </div>
+</body>
+</html>
