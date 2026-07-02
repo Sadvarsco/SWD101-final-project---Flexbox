@@ -40,6 +40,14 @@ const TYPES = {
   en:    { label: "English",  cls: "t-en" }
 };
 
+// Plain-language descriptions shown on hover in the "Now matching" panel.
+const TYPE_HELP = {
+  kanji: "The character itself",
+  on:    "On-yomi — the Chinese-derived reading",
+  kun:   "Kun-yomi — the native Japanese reading",
+  en:    "English — the meaning"
+};
+
 const COLS = 8;
 const CLEAR_POINTS = 20;
 const FIRST_TRY_BONUS = 15;
@@ -106,6 +114,14 @@ function pickFace(list, hard) {
   if (!Array.isArray(list)) list = list ? [list] : [];
   if (list.length === 0) return "";
   return hard ? list[Math.floor(Math.random() * list.length)] : list[0];
+}
+
+// "ジョ・ニョ" -> "ジョ・ニョ (jo・nyo)" — each reading gets its phonetic
+// (romaji) in italics, so a non-Japanese reader can pronounce it.
+function withRomaji(list) {
+  const kana = list.join("・");
+  const rom = list.map((r) => phonetic(r)).join("・");
+  return kana + ' <i class="rom">(' + rom + ")</i>";
 }
 
 function jishoURL(k) { return "https://jisho.org/search/" + encodeURIComponent(k + " #kanji"); }
@@ -359,7 +375,18 @@ function autoHint() {
  * ------------------------------------------------------------------ */
 
 function onTileClick(tile) {
-  if (state.busy || tile.tstate !== "wall" || tile.wrong) return;
+  if (state.busy) return;
+
+  // Clicking a brick already in the review tray cancels the current word,
+  // sending everything back so you can start a different kanji.
+  if (tile.tstate === "staged") {
+    KanjiAudio.click();
+    endSet();
+    flashHint("Cleared — pick a kanji to start again. 🔄");
+    return;
+  }
+
+  if (tile.tstate !== "wall" || tile.wrong) return;
 
   // No kanji chosen yet.
   if (state.activeGroup === null) {
@@ -643,8 +670,8 @@ function renderCollection() {
       '<div class="wc-head">' +
         '<span class="wc-k jp">' + e.kanji + "</span>" +
         '<span class="wc-readings">' +
-          '<span class="wc-r r-on jp">' + e.on.join("・") + "</span>" +
-          '<span class="wc-r r-kun jp">' + e.kun.join("・") + "</span>" +
+          '<span class="wc-r r-on jp">' + withRomaji(e.on) + "</span>" +
+          '<span class="wc-r r-kun jp">' + withRomaji(e.kun) + "</span>" +
           '<span class="wc-r r-en">' + e.en.join(", ") + "</span>" +
         "</span>" +
       "</div>" +
@@ -685,9 +712,11 @@ function updateTarget() {
   const rows = allMatches(state.activeGroup).map((m) => {
     const got = stagedIds.has(m.id);
     const now = state.mode === "easy" && !got && m.type === state.step;
-    return '<li class="' + (got ? "got" : "") + (now ? " now" : "") + '">' +
+    return '<li class="' + (got ? "got" : "") + (now ? " now" : "") +
+        '" title="' + TYPE_HELP[m.type] + '">' +
       '<span class="dot ' + TYPES[m.type].cls + '"></span>' +
-      '<span class="ttype">' + TYPES[m.type].label + "</span>" +
+      '<span class="ttype">' + TYPES[m.type].label +
+        '<span class="ttip">' + TYPE_HELP[m.type] + "</span></span>" +
       '<span class="tval jp">' + (got ? m.value : "❓") + "</span></li>";
   }).join("");
   panel.innerHTML =
