@@ -65,6 +65,7 @@ const settings = {
   mode: "normal",
   size: 8,
   sound: true,
+  furigana: true,
   labels: { kanji: true, on: true, kun: true, en: true }
 };
 
@@ -118,6 +119,7 @@ function loadSettings() {
       settings.mode = s.mode || settings.mode;
       settings.size = s.size || settings.size;
       settings.sound = s.sound !== undefined ? s.sound : settings.sound;
+      settings.furigana = s.furigana !== undefined ? s.furigana : settings.furigana;
       if (s.labels) Object.assign(settings.labels, s.labels);
     }
   } catch (e) {}
@@ -518,12 +520,19 @@ function addToCollection(kanji) {
   renderCollection();
 }
 
-// Sentence HTML: insert the reading after the example word and highlight
-// every occurrence of the kanji character.
+// Sentence HTML: insert the reading after the example word, highlight every
+// occurrence of the kanji character, then add furigana (<ruby>) over the
+// OTHER kanji words in the sentence. The matched word's parenthesized
+// reading is left untouched; the furigana toggle only hides/shows the <rt>.
 function exampleHTML(entry, ex, typeCls, typeLabel) {
   if (!ex) return "";
   const withReading = ex.jp.replace(ex.word, ex.word + "（" + ex.read + "）");
-  const highlighted = withReading.split(entry.kanji).join('<span class="hl">' + entry.kanji + "</span>");
+  let highlighted = withReading.split(entry.kanji).join('<span class="hl">' + entry.kanji + "</span>");
+  if (ex.ruby) {
+    Object.keys(ex.ruby).forEach((w) => {
+      highlighted = highlighted.split(w).join("<ruby>" + w + "<rt>" + ex.ruby[w] + "</rt></ruby>");
+    });
+  }
   return '<div class="wc-ex">' +
     '<span class="dot ' + typeCls + '" title="' + typeLabel + '"></span>' +
     '<span class="wc-jp jp">' + highlighted + "</span>" +
@@ -643,6 +652,36 @@ function win() {
     "<p>Score <b>" + state.score + "</b></p>" +
     '<p class="muted">departure jingle playing…</p>' +
     "</div>";
+
+  // One-tap ways into the next game.
+  const MODES = ["easy", "normal", "hard"];
+  const SIZES = [6, 8, 12, 16];
+  const actions = document.createElement("div");
+  actions.className = "win-actions";
+  const mk = (label, fn) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "primary win-btn";
+    b.textContent = label;
+    b.addEventListener("click", fn);
+    actions.appendChild(b);
+  };
+  mk("▶ Play again", () => newGame());
+  const mi = MODES.indexOf(settings.mode);
+  if (mi >= 0 && mi < MODES.length - 1) {
+    const next = MODES[mi + 1];
+    mk("⬆ Try " + next, () => {
+      settings.mode = next; saveSettings(); syncControls(); newGame();
+    });
+  }
+  const si = SIZES.indexOf(settings.size);
+  if (si >= 0 && si < SIZES.length - 1) {
+    const next = SIZES[si + 1];
+    mk("➕ " + next + " kanji", () => {
+      settings.size = next; saveSettings(); syncControls(); newGame();
+    });
+  }
+  boardEl.querySelector(".win").appendChild(actions);
   updateTarget();
 }
 
@@ -675,6 +714,8 @@ function syncControls() {
   els.mode.value = settings.mode;
   els.size.value = String(settings.size);
   els.sound.checked = settings.sound;
+  els.furigana.checked = settings.furigana;
+  document.body.classList.toggle("no-furigana", !settings.furigana);
   ["kanji", "on", "kun", "en"].forEach((t) => {
     els["lbl_" + t].checked = settings.labels[t];
   });
@@ -692,6 +733,11 @@ function wireControls() {
   });
   els.sound.addEventListener("change", () => {
     settings.sound = els.sound.checked; KanjiAudio.setMuted(!settings.sound); saveSettings();
+  });
+  els.furigana.addEventListener("change", () => {
+    settings.furigana = els.furigana.checked;
+    document.body.classList.toggle("no-furigana", !settings.furigana);
+    saveSettings();
   });
   els.lblAll.addEventListener("change", () => {
     const on = els.lblAll.checked;
@@ -730,6 +776,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mode: document.getElementById("mode"),
     size: document.getElementById("size"),
     sound: document.getElementById("sound"),
+    furigana: document.getElementById("furigana"),
     lblAll: document.getElementById("lbl-all"),
     lbl_kanji: document.getElementById("lbl-kanji"),
     lbl_on: document.getElementById("lbl-on"),

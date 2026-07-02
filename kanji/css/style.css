@@ -254,6 +254,8 @@ body {
 .win h2 { margin: 4px 0 0; color: var(--accent); font-family: "Mochiy Pop One", sans-serif; }
 .win p { margin: 0; color: var(--ink-soft); }
 .win b { color: var(--mint-deep); }
+.win-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+.win-btn { flex: 0 0 auto; }
 
 /* ---------- side cards ---------- */
 .card {
@@ -335,8 +337,11 @@ details.acc > summary:hover { background: #fdfaf2; }
   font-size: .86rem; flex-wrap: wrap;
 }
 .wc-ex .dot { margin-top: 4px; }
-.wc-jp { flex: 1 1 100%; line-height: 1.5; }
+.wc-jp { flex: 1 1 100%; line-height: 1.9; } /* room for furigana above */
 .wc-jp .hl { color: var(--accent); font-weight: 700; background: var(--accent-soft); border-radius: 4px; padding: 0 2px; }
+.wc-jp rt { font-size: .55em; color: var(--ink-soft); font-weight: 400; }
+body.no-furigana .wc-jp rt { display: none; }
+body.no-furigana .wc-jp { line-height: 1.5; }
 .wc-en { flex: 1 1 100%; color: var(--ink-soft); font-size: .78rem; padding-left: 20px; }
 .wc-ex .dot + .wc-jp { flex: 1 1 auto; }
 .wc-more { margin-top: 6px; }

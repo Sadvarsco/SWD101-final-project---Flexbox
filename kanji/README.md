@@ -48,6 +48,11 @@ The wall is built from bricks. Each brick shows **one face** of a kanji:
   it down. Weaker words appear more often; stronger ones appear rarely (but
   never disappear entirely). Track it in the **Progress** panel.
 - **Collapsible panels** — Settings, Progress and Brick faces fold away.
+- **Furigana toggle** — example sentences show small hiragana above the
+  *other* kanji words (the matched word keeps its parenthesized reading);
+  turn it off in Settings when you want to test yourself.
+- **Win-screen shortcuts** — Play again, bump the difficulty, or add more
+  kanji with one tap.
 
 ## Files
 
