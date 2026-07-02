@@ -94,6 +94,16 @@ const KanjiAudio = (function () {
       tone(SCALE[Math.min(i, SCALE.length - 1)], c.currentTime, 0.5, 0.55);
     },
 
+    // A single bright major chord — the "all tiles rise together" resolve.
+    chord() {
+      if (muted) return;
+      const c = ensure();
+      if (!c) return;
+      const t = c.currentTime;
+      // C major + octave (C5 E5 G5 C6); lower per-note gain so the sum is clean.
+      [523.25, 659.25, 783.99, 1046.5].forEach((f) => bell(f, t, 0.3, 1.1));
+    },
+
     // Soft click for a normal pick.
     click() {
       if (muted) return;

@@ -14,6 +14,7 @@
     <header class="titlebar">
       <h1>🐱 Kanji&nbsp;Collapse</h1>
       <p class="sub">Pick a kanji, gather its readings &amp; meaning in the tray, watch the word float away.</p>
+      <button id="kotdBtn" type="button" class="kotd-open">🐾 Kanji of the Day</button>
     </header>
 
     <main class="layout">
@@ -34,6 +35,9 @@
         </div>
 
         <div id="hint" class="hint"></div>
+
+        <!-- gentle "want it easier?" nudge after lots of misses -->
+        <div id="nudge" class="nudge" hidden></div>
       </section>
 
       <!-- Side panel -->
@@ -115,6 +119,11 @@
     <footer class="foot">
       <p>SWD101 · a kanji-learning brick-collapse game · JLPT N5 starter set</p>
     </footer>
+  </div>
+
+  <!-- Kanji of the Day popup -->
+  <div id="kotd" class="modal" hidden>
+    <div id="kotdBody" class="kotd-card"></div>
   </div>
 
   <script src="js/data.js"></script>

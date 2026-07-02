@@ -76,6 +76,9 @@ const state = {
   step: null,          // easy mode: which type the player must find next
   wrongStreak: 0,      // easy mode: wrongs since the last right answer
   collection: [],      // entries cleared this session (newest first)
+  tainted: new Set(),  // kanji missed at least once this board (no first-try star)
+  totalWrong: 0,       // wrong picks this board (drives the "want it easier?" nudge)
+  offeredEasier: false,// have we shown the difficulty nudge this board?
   score: 0,
   groupsTotal: 0,
   groupsCleared: 0,
@@ -374,6 +377,12 @@ function autoHint() {
  * Click handling
  * ------------------------------------------------------------------ */
 
+// Wall tiles still belonging to a group — INCLUDING the kanji. In hard mode
+// the kanji is collected like any other tile, so completion is "none left".
+function wallGroupCount(groupId) {
+  return state.tiles.filter((t) => t.groupId === groupId && t.tstate === "wall").length;
+}
+
 function onTileClick(tile) {
   if (state.busy) return;
 
@@ -388,9 +397,11 @@ function onTileClick(tile) {
 
   if (tile.tstate !== "wall" || tile.wrong) return;
 
-  // No kanji chosen yet.
+  const anyOrder = state.mode === "hard"; // hard: pick tiles in any order
+
+  // Nothing selected yet — this tile starts the word.
   if (state.activeGroup === null) {
-    if (tile.type !== "kanji") {
+    if (!anyOrder && tile.type !== "kanji") {
       flashHint("Pick a Kanji brick first! 🐾");
       return;
     }
@@ -398,17 +409,11 @@ function onTileClick(tile) {
     return;
   }
 
-  // A set is in progress.
-  if (tile.type === "kanji") {
-    // Choosing a different kanji mid-set counts as a wrong move.
-    handleWrong(tile);
-    return;
-  }
-
+  // A word is in progress.
   if (tile.groupId === state.activeGroup) {
     KanjiAudio.click();
     stageTile(tile);
-    if (wallMatches(state.activeGroup).length === 0) {
+    if (wallGroupCount(state.activeGroup) === 0) {
       updateGrayout();
       updateTarget();
       completeSet();
@@ -423,15 +428,15 @@ function onTileClick(tile) {
   handleWrong(tile);
 }
 
-function beginSet(kanjiTile) {
-  state.activeGroup = kanjiTile.groupId;
+// Start a word from `tile` (a kanji in easy/normal; ANY tile in hard).
+function beginSet(tile) {
+  state.activeGroup = tile.groupId;
   state.hadWrong = false;
   state.hintUsed = false;
   state.staged = [];
   KanjiAudio.click();
-  stageTile(kanjiTile);
-  // A lone kanji (all its matches already gone) clears on its own.
-  if (wallMatches(state.activeGroup).length === 0) {
+  stageTile(tile);
+  if (wallGroupCount(state.activeGroup) === 0) { // lone tile clears on its own
     updateGrayout();
     updateTarget();
     completeSet();
@@ -444,10 +449,13 @@ function beginSet(kanjiTile) {
 
 function handleWrong(tile) {
   KanjiAudio.wrong();
-  if (!state.hadWrong) {
-    SRS.bump(state.tiles.find((t) => t.groupId === state.activeGroup).kanji, -1);
-  }
+  const kanji = state.tiles.find((t) => t.groupId === state.activeGroup).kanji;
+  // One SRS penalty + taint per word per board (so a hard-mode reset can't
+  // later masquerade as a clean first-try clear).
+  if (!state.tainted.has(kanji)) SRS.bump(kanji, -1);
+  state.tainted.add(kanji);
   state.hadWrong = true;
+  state.totalWrong++;
 
   // shake feedback
   tile.el.classList.remove("shake");
@@ -470,6 +478,19 @@ function handleWrong(tile) {
     flashHint("Oops! Selection reset (−" + PENALTY.hard + ").");
     endSet(); // returns staged tiles, clears state
   }
+
+  maybeOfferEasier();
+}
+
+// After a lot of misses, gently offer an easier setup (once per board).
+const WRONG_NUDGE_AT = 6;
+function maybeOfferEasier() {
+  if (state.offeredEasier || state.totalWrong < WRONG_NUDGE_AT) return;
+  const canEasier = state.mode !== "easy";
+  const canFewer = settings.size > 6;
+  if (!canEasier && !canFewer) return;
+  state.offeredEasier = true;
+  showNudge(canEasier, canFewer);
 }
 
 /* ------------------------------------------------------------------ *
@@ -514,7 +535,8 @@ function completeSet() {
   state.busy = true;
   const group = state.staged.slice();
   const kanji = group[0].kanji;
-  const clean = !state.hadWrong && !state.hintUsed;
+  // Tainted (ever missed) or hinted words never count as a first-try clear.
+  const clean = !state.hintUsed && !state.tainted.has(kanji);
 
   let gained = group.length * CLEAR_POINTS;
   if (clean) {
@@ -523,20 +545,22 @@ function completeSet() {
   }
   state.score += gained;
   state.groupsCleared++;
-  flashHint("✓ " + group[0].value + "  +" + gained + (clean ? "  ⭐first try!" : ""));
+  flashHint("✓ " + kanji + "  +" + gained + (clean ? "  ⭐first try!" : ""));
 
-  // Lift each brick away in order with an ascending ding.
-  group.forEach((tile, i) => {
-    setTimeout(() => {
+  // The tray fills as you pick (1,2,3,4 down); on completion every brick
+  // rises together ONCE and a single chord plays before they vanish.
+  const rise = () => {
+    group.forEach((tile) => {
       if (!tile.el) return;
-      tile.el.style.transition = "transform .42s ease, opacity .42s ease";
-      tile.el.style.transform = "translateY(-170%) scale(.55) rotate(-6deg)";
+      tile.el.style.transition = "transform .5s cubic-bezier(.3,1.4,.5,1), opacity .5s ease";
+      tile.el.style.transform = "translateY(-165%) scale(.62)";
       tile.el.style.opacity = "0";
-      KanjiAudio.ding(i);
-    }, i * LIFT_STAGGER);
-  });
+    });
+    KanjiAudio.chord();
+  };
+  setTimeout(rise, 160); // brief settle so the last pick lands first
 
-  const done = group.length * LIFT_STAGGER + 460;
+  const done = 160 + 620;
   setTimeout(() => {
     group.forEach((tile) => {
       tile.tstate = "cleared";
@@ -706,8 +730,9 @@ function updateTarget() {
     panel.innerHTML = '<p class="target-empty">Tap a <b>Kanji</b> brick to start a word. 🐱</p>';
     return;
   }
-  const kanjiTile = state.staged[0];
-  const ch = kanjiTile.value;
+  // Every tile carries its kanji, so this works even in hard mode where the
+  // first pick might be a reading rather than the kanji itself.
+  const ch = state.staged[0].kanji;
   const stagedIds = new Set(state.staged.map((t) => t.id));
   const rows = allMatches(state.activeGroup).map((m) => {
     const got = stagedIds.has(m.id);
@@ -810,6 +835,10 @@ function newGame() {
   state.score = 0;
   state.groupsCleared = 0;
   state.busy = false;
+  state.tainted = new Set();
+  state.totalWrong = 0;
+  state.offeredEasier = false;
+  hideNudge();
   resetSetState();
 
   const built = buildTiles(settings.size, state.mode === "hard");
@@ -878,6 +907,109 @@ function wireControls() {
 }
 
 /* ------------------------------------------------------------------ *
+ * "Want it easier?" nudge (after lots of wrong picks)
+ * ------------------------------------------------------------------ */
+
+const EASIER = { hard: "normal", normal: "easy" };
+const SIZE_STEPS = [6, 8, 12, 16];
+
+function showNudge(canEasier, canFewer) {
+  let btns = "";
+  if (canEasier) btns += '<button id="nudgeEasier" class="primary">😌 Easier difficulty</button>';
+  if (canFewer)  btns += '<button id="nudgeFewer" class="primary">🔢 Fewer kanji</button>';
+  btns += '<button id="nudgeNo" class="ghost">I\'m good 💪</button>';
+  els.nudge.innerHTML =
+    '<span class="nudge-cat">🐈</span>' +
+    '<p>I noticed a few misses in a row — want to make it comfier?</p>' +
+    '<div class="nudge-btns">' + btns + "</div>";
+  els.nudge.hidden = false;
+
+  const e = document.getElementById("nudgeEasier");
+  if (e) e.onclick = () => { settings.mode = EASIER[settings.mode] || settings.mode; saveSettings(); syncControls(); newGame(); };
+  const f = document.getElementById("nudgeFewer");
+  if (f) f.onclick = () => {
+    const i = SIZE_STEPS.indexOf(settings.size);
+    if (i > 0) settings.size = SIZE_STEPS[i - 1];
+    saveSettings(); syncControls(); newGame();
+  };
+  document.getElementById("nudgeNo").onclick = hideNudge;
+}
+function hideNudge() { if (els && els.nudge) els.nudge.hidden = true; }
+
+/* ------------------------------------------------------------------ *
+ * Kanji of the Day 🐱 — a fun kawaii trivia popup
+ * ------------------------------------------------------------------ */
+
+const KOTD_KEY = "kc.kotd.day";
+const CATS = ["🐱", "🐈", "😺", "😸", "🐾", "🍡", "🌸"];
+
+function dayNumber(d) {
+  const start = new Date(d.getFullYear(), 0, 0);
+  return Math.floor((d - start) / 86400000);
+}
+function dailyEntry() {
+  // Stable for the whole day, varies day to day.
+  return KANJI[dayNumber(new Date()) % KANJI.length];
+}
+
+function kotdHTML(e) {
+  const cat = CATS[Math.floor(Math.random() * CATS.length)];
+  return (
+    '<button class="kotd-x" id="kotdClose" aria-label="Close">✕</button>' +
+    '<div class="kotd-head"><span class="kotd-paw">🐾</span>' +
+      "Kanji of the Day <span class=\"kotd-paw\">" + cat + "</span></div>" +
+    '<div class="kotd-hero">' +
+      '<span class="kotd-pic" aria-hidden="true">' + (e.pic || "🐾") + "</span>" +
+      '<span class="kotd-k jp">' + e.kanji + "</span>" +
+    "</div>" +
+    '<div class="kotd-mean">' + e.en.join(", ") + "</div>" +
+    '<div class="kotd-reads">' +
+      '<span class="wc-r r-on jp">On · ' + withRomaji(e.on) + "</span>" +
+      '<span class="wc-r r-kun jp">Kun · ' + withRomaji(e.kun) + "</span>" +
+    "</div>" +
+    '<div class="kotd-stats">' +
+      '<span>✍️ ' + e.strokes + " strokes</span>" +
+      "<span>🎒 Grade " + (e.grade || 1) + "</span>" +
+      "<span>📗 JLPT " + (e.jlpt || "N5") + "</span>" +
+    "</div>" +
+    '<div class="kotd-sec"><b>📜 History</b><p>' + e.etym + "</p></div>" +
+    '<div class="kotd-sec"><b>📝 In a sentence</b>' +
+      exampleHTML(e, e.onEx, "t-on", "On-yomi usage") +
+      exampleHTML(e, e.kunEx, "t-kun", "Kun-yomi usage") +
+    "</div>" +
+    '<div class="kotd-sec kotd-fun"><b>✨ Did you know?</b><p>' + e.trivia + "</p>" +
+      '<p class="kotd-spot">👀 ' + e.spot + "</p></div>" +
+    '<div class="kotd-btns">' +
+      '<button id="kotdShuffle" class="ghost">🎲 Another!</button>' +
+      '<button id="kotdOk" class="primary">Let\'s play 🐾</button>' +
+    "</div>"
+  );
+}
+
+function openKOTD(entry) {
+  els.kotdBody.innerHTML = kotdHTML(entry);
+  els.kotd.hidden = false;
+  document.getElementById("kotdClose").onclick = closeKOTD;
+  document.getElementById("kotdOk").onclick = closeKOTD;
+  document.getElementById("kotdShuffle").onclick = () => {
+    const others = KANJI.filter((k) => k.kanji !== entry.kanji);
+    openKOTD(others[Math.floor(Math.random() * others.length)]);
+  };
+}
+function closeKOTD() { els.kotd.hidden = true; }
+
+// Show the daily card automatically the first time you visit each day.
+function maybeShowDailyKOTD() {
+  const today = new Date().toDateString();
+  let last = null;
+  try { last = localStorage.getItem(KOTD_KEY); } catch (e) {}
+  if (last !== today) {
+    try { localStorage.setItem(KOTD_KEY, today); } catch (e) {}
+    setTimeout(() => openKOTD(dailyEntry()), 650);
+  }
+}
+
+/* ------------------------------------------------------------------ *
  * Boot
  * ------------------------------------------------------------------ */
 
@@ -903,13 +1035,22 @@ document.addEventListener("DOMContentLoaded", () => {
     lbl_en: document.getElementById("lbl-en"),
     newGame: document.getElementById("newGame"),
     hintBtn: document.getElementById("hintBtn"),
-    reset: document.getElementById("reset")
+    reset: document.getElementById("reset"),
+    nudge: document.getElementById("nudge"),
+    kotd: document.getElementById("kotd"),
+    kotdBody: document.getElementById("kotdBody"),
+    kotdBtn: document.getElementById("kotdBtn")
   };
 
   loadSettings();
   syncControls();
   wireControls();
   newGame();
+
+  // Kanji of the Day: button opens it anytime; auto-show once per day.
+  els.kotdBtn.addEventListener("click", () => openKOTD(dailyEntry()));
+  els.kotd.addEventListener("click", (ev) => { if (ev.target === els.kotd) closeKOTD(); });
+  maybeShowDailyKOTD();
 
   // Refit brick text when the board changes size.
   let resizeTimer;
