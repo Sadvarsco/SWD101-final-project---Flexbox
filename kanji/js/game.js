@@ -195,6 +195,18 @@ function makeTileEl(tile) {
   const brick = document.createElement("span");
   brick.className = "brick";
 
+  // Easy mode shows a meaning-image behind the kanji (CSS gates visibility).
+  if (tile.type === "kanji") {
+    const entry = entryOf(tile.kanji);
+    if (entry && entry.pic) {
+      const pic = document.createElement("span");
+      pic.className = "pic";
+      pic.setAttribute("aria-hidden", "true");
+      pic.textContent = entry.pic;
+      brick.appendChild(pic);
+    }
+  }
+
   const face = document.createElement("span");
   face.className = "face";
   face.textContent = tile.value;
@@ -478,12 +490,19 @@ function applyGravity() {
 
 function updateGrayout() {
   const guide = state.mode !== "hard"; // hard mode = no visual guidance
+  // Easy mode: once a category is matched (say, the kun-yomi), every other
+  // brick of that category grays out too — the hunt narrows as you go.
+  const gotTypes = new Set(
+    state.mode === "easy"
+      ? state.staged.filter((t) => t.type !== "kanji").map((t) => t.type)
+      : []
+  );
   state.tiles.forEach((tile) => {
     if (tile.tstate !== "wall" || !tile.el) return;
     let disabled = false;
     if (guide) {
       if (state.activeGroup === null) disabled = tile.type !== "kanji";
-      else disabled = tile.type === "kanji";
+      else disabled = tile.type === "kanji" || gotTypes.has(tile.type);
     }
     if (tile.wrong) disabled = true;
     tile.el.classList.toggle("disabled", disabled);
@@ -629,6 +648,7 @@ function win() {
 
 function newGame() {
   state.mode = settings.mode;
+  document.body.classList.toggle("mode-easy", state.mode === "easy");
   state.score = 0;
   state.groupsCleared = 0;
   state.busy = false;

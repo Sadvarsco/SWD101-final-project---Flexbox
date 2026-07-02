@@ -136,6 +136,26 @@ body {
   font-family: "Baloo 2", sans-serif;
   font-weight: 700;
 }
+.face, .tag { position: relative; z-index: 1; }
+
+/* Easy mode: a meaning-image peeks out from behind the kanji. */
+.pic {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6em;
+  opacity: .38;
+  filter: saturate(1.15);
+  pointer-events: none;
+  z-index: 0;
+}
+.mode-easy .t-kanji .pic { display: flex; }
+.mode-easy .t-kanji .face {
+  text-shadow: 0 0 6px #fff, 0 0 12px #fff; /* keep the kanji readable over the art */
+}
+.tile.shelved .pic { font-size: 2em; }
 
 /* per-type pastel tops */
 .t-kanji .brick { background: linear-gradient(180deg, var(--c-kanji-2), #fff); border-top: 5px solid var(--c-kanji); }
