@@ -29,6 +29,19 @@
     .card p { margin:0; color:var(--muted); font-size:.9rem; line-height:1.4; }
     footer { margin-top:28px; color:var(--muted); font-size:.82rem; }
     footer a { color:var(--accent); }
+    .share {
+      display:flex; align-items:center; gap:20px; margin-top:24px;
+      background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px;
+      box-shadow:0 6px 18px rgba(80,70,120,.06);
+    }
+    .share img.qr { width:120px; height:120px; flex:0 0 auto; border-radius:8px; }
+    .share h2 { margin:0 0 4px; font-size:1.05rem; }
+    .share p { margin:0 0 8px; color:var(--muted); font-size:.9rem; line-height:1.4; }
+    .share code {
+      display:inline-block; word-break:break-all; font-size:.8rem; color:var(--accent);
+      background:#f5f2ff; border:1px solid var(--line); border-radius:8px; padding:4px 8px;
+    }
+    @media (max-width:440px){ .share { flex-direction:column; text-align:center; } }
   </style>
 </head>
 <body>
@@ -52,6 +65,15 @@
         <h2>Flexbox Profile</h2>
         <p>The original SWD101 flexbox profile page.</p>
       </a>
+    </div>
+
+    <div class="share">
+      <img class="qr" src="manga/qr.svg" alt="QR code linking to the manga prototype">
+      <div>
+        <h2>Show it anywhere 📱</h2>
+        <p>Scan to open the manga demo on a phone — great for sharing on a call or projecting to a room.</p>
+        <code>sadvarsco.github.io/SWD101-final-project---Flexbox/manga/</code>
+      </div>
     </div>
 
     <footer>SWD101 · <a href="https://github.com/Sadvarsco/SWD101-final-project---Flexbox">source on GitHub</a></footer>
