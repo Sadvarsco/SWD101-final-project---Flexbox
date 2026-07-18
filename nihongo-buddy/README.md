@@ -22,6 +22,9 @@ in `localStorage` on your device.
    only when you feel like it. The quiz result screen has a
    **🔁 More questions** button that deals another shuffled round, and the set
    remembers your best score.
+5. **Settings** — links to sibling Japanese apps (Kanji Collapse, the
+   projects page — add more in the `APPS` list in `js/app.js`), plus a
+   reset button that clears saved progress and study sets.
 
 ## Files
 

@@ -341,6 +341,53 @@
     });
   }
 
+  /* ---------- settings ---------- */
+
+  /* Sibling Japanese apps linked from Settings. Add entries here as more
+     apps get deployed (e.g. KanjiGrove once it has a home). */
+  var APPS = [
+    {
+      emoji: "🐱",
+      name: "Kanji Collapse",
+      blurb: "A kawaii brick-matching game for learning JLPT N5 kanji.",
+      href: "../kanji/"
+    },
+    {
+      emoji: "🏠",
+      name: "All projects",
+      blurb: "The landing page with everything built in this repo.",
+      href: "../"
+    }
+  ];
+
+  function renderSettings() {
+    setNav("settings");
+    var links = APPS.map(function (a) {
+      return '<a class="card lesson applink" href="' + esc(a.href) + '">' +
+        '<div class="emoji">' + a.emoji + '</div>' +
+        '<h2>' + esc(a.name) + '</h2>' +
+        '<p class="blurb">' + esc(a.blurb) + '</p></a>';
+    }).join("");
+
+    app.innerHTML =
+      '<h1>Settings</h1>' +
+      '<h2 class="section">🇯🇵 More Japanese apps</h2>' +
+      '<p class="sub">Other study tools that pair well with Nihongo Buddy.</p>' +
+      '<div class="grid">' + links + '</div>' +
+      '<h2 class="section">🧹 Reset</h2>' +
+      '<p class="sub">Clears saved lesson progress and deletes every study set on this device.</p>' +
+      '<button class="btn ghost danger" id="reset">Reset all progress</button>';
+
+    document.getElementById("reset").addEventListener("click", function () {
+      if (!confirm("Reset lesson progress and delete all study sets?")) return;
+      progress = {};
+      sets = [];
+      save(PROGRESS_KEY, progress);
+      save(SETS_KEY, sets);
+      goto("#/");
+    });
+  }
+
   /* ---------- shared quiz runner ---------- */
 
   function runQuiz(opts) {
@@ -412,6 +459,7 @@
     var hash = location.hash || "#/";
     var parts = hash.replace(/^#\//, "").split("/");
     if (parts[0] === "watch" && parts[1]) renderWatch(parts[1]);
+    else if (parts[0] === "settings") renderSettings();
     else if (parts[0] === "sets") renderSets();
     else if (parts[0] === "set" && parts[1]) renderSet(parts[1]);
     else renderLessons();

@@ -123,6 +123,12 @@ h1 { margin: 0 0 6px; font-size: 1.7rem; }
 .quiz-offer { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 16px; text-align: center; }
 .quiz-offer .meta { margin-bottom: 12px; }
 
+/* ---------- settings ---------- */
+
+h2.section { margin: 26px 0 4px; font-size: 1.15rem; }
+a.applink { display: block; text-decoration: none; color: inherit; transition: transform .12s ease, box-shadow .15s ease; }
+a.applink:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(120, 90, 140, .14); border-color: var(--accent-2); }
+
 /* ---------- quiz ---------- */
 
 .quiz-prompt { text-align: center; font-weight: 700; padding: 18px 8px 26px; }
