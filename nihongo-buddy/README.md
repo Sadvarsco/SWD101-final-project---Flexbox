@@ -9,8 +9,11 @@ in `localStorage` on your device.
 
 ## How it works
 
-1. **Watch a lesson** — each lesson plays as word slides (Japanese → romaji →
-   English) with a progress bar.
+1. **Watch a lesson** — lessons follow a classic textbook chapter shape:
+   an opening **💬 dialogue**, then **✏️ grammar points** with example
+   sentences, then the vocabulary as word slides (Japanese → romaji →
+   English), all with a progress bar. Dialogue and grammar sections are
+   optional per lesson — vocab-only lessons still work.
 2. **Take the pass check** — a short multiple-choice quiz at the end of each
    watch. Score **80%+** and the lesson is marked **✔ passed**.
 3. **✨ Practice more** — every passed lesson gets a *Practice more* button
@@ -44,6 +47,12 @@ Append to `LESSONS` in `js/data.js`:
   title: "Colors",
   level: "N5",
   blurb: "One-line description shown on the card.",
+  dialogue: [               // optional opening scene (one slide)
+    { speaker: "メイ", jp: "…", romaji: "…", en: "…" }
+  ],
+  grammar: [                // optional; one slide per point
+    { title: "〜です", explain: "…", examples: [{ jp: "…", romaji: "…", en: "…" }] }
+  ],
   items: [
     { jp: "赤 (あか)", romaji: "aka", en: "red" },
     // 8+ items recommended so quiz choices stay interesting

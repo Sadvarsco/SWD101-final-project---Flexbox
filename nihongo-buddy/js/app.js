@@ -153,11 +153,48 @@
     var lesson = lessonById(lessonId);
     if (!lesson) { location.hash = "#/"; return; }
 
-    var slides = lesson.items;
+    /* Chapter shape borrowed from classic textbooks:
+       opening dialogue → grammar points → vocabulary → pass check. */
+    var slides = [];
+    if (lesson.dialogue) slides.push({ type: "dialogue" });
+    (lesson.grammar || []).forEach(function (g) { slides.push({ type: "grammar", g: g }); });
+    lesson.items.forEach(function (it) { slides.push({ type: "vocab", item: it }); });
+
     var index = 0;
 
+    function exampleHTML(ex) {
+      return '<div class="example">' +
+        '<span class="ex-jp">' + esc(ex.jp) + '</span>' +
+        '<span class="ex-romaji">' + esc(ex.romaji) + '</span>' +
+        '<span class="ex-en">' + esc(ex.en) + '</span></div>';
+    }
+
+    function slideHTML(slide) {
+      if (slide.type === "dialogue") {
+        return '<div class="slide dialogue">' +
+          '<div class="slide-label">💬 Dialogue</div>' +
+          lesson.dialogue.map(function (line) {
+            return '<div class="line"><span class="speaker">' + esc(line.speaker) + '</span>' +
+              '<div class="line-body"><div class="ex-jp">' + esc(line.jp) + '</div>' +
+              '<div class="ex-romaji">' + esc(line.romaji) + '</div>' +
+              '<div class="ex-en">' + esc(line.en) + '</div></div></div>';
+          }).join("") + '</div>';
+      }
+      if (slide.type === "grammar") {
+        return '<div class="slide grammar">' +
+          '<div class="slide-label">✏️ Grammar</div>' +
+          '<div class="grammar-title">' + esc(slide.g.title) + '</div>' +
+          '<p class="grammar-explain">' + esc(slide.g.explain) + '</p>' +
+          slide.g.examples.map(exampleHTML).join("") + '</div>';
+      }
+      return '<div class="slide">' +
+        '<div class="slide-jp">' + esc(slide.item.jp) + '</div>' +
+        '<div class="slide-romaji">' + esc(slide.item.romaji) + '</div>' +
+        '<div class="slide-en">' + esc(slide.item.en) + '</div>' +
+        '</div>';
+    }
+
     function paint() {
-      var item = slides[index];
       var pct = Math.round(((index + 1) / slides.length) * 100);
       app.innerHTML =
         '<a class="crumb" href="#/">← Lessons</a>' +
@@ -166,11 +203,7 @@
         '<h1>' + lesson.emoji + " " + esc(lesson.title) + '</h1>' +
         '<span class="meta">' + (index + 1) + " / " + slides.length + '</span></div>' +
         '<div class="bar"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
-        '<div class="slide">' +
-        '<div class="slide-jp">' + esc(item.jp) + '</div>' +
-        '<div class="slide-romaji">' + esc(item.romaji) + '</div>' +
-        '<div class="slide-en">' + esc(item.en) + '</div>' +
-        '</div>' +
+        slideHTML(slides[index]) +
         '<div class="row spread">' +
         '<button class="btn ghost" id="prev"' + (index === 0 ? " disabled" : "") + '>← Back</button>' +
         (index < slides.length - 1

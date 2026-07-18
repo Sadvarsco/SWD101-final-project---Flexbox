@@ -109,6 +109,29 @@ h1 { margin: 0 0 6px; font-size: 1.7rem; }
 .slide-romaji { color: var(--accent-2); font-style: italic; margin-top: 10px; font-size: 1.05rem; }
 .slide-en { color: var(--muted); margin-top: 6px; font-size: 1.1rem; }
 
+/* dialogue & grammar slides (textbook-style chapter opener) */
+.slide.dialogue, .slide.grammar { text-align: left; padding: 14px 6px 24px; }
+.slide-label {
+  display: inline-block; font-size: .75rem; font-weight: 700; letter-spacing: .04em;
+  color: var(--accent-2); background: #efeaff; border-radius: 999px;
+  padding: 4px 12px; margin-bottom: 14px;
+}
+.line { display: flex; gap: 12px; margin-bottom: 14px; }
+.speaker {
+  flex: 0 0 auto; align-self: flex-start;
+  font-size: .8rem; font-weight: 700; color: #d4577a;
+  background: #fff0f4; border-radius: 999px; padding: 4px 10px; margin-top: 2px;
+}
+.line-body .ex-jp { font-size: 1.15rem; font-weight: 600; }
+.ex-romaji { color: var(--accent-2); font-style: italic; font-size: .9rem; display: block; }
+.ex-en { color: var(--muted); font-size: .9rem; display: block; }
+.grammar-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
+.grammar-explain { color: var(--muted); line-height: 1.55; margin: 0 0 14px; }
+.example {
+  border-left: 3px solid var(--line); padding: 4px 0 4px 12px; margin-bottom: 10px;
+}
+.example .ex-jp { display: block; font-size: 1.05rem; font-weight: 600; }
+
 .flashcard {
   display: block; width: 100%; border: 2px dashed var(--line); border-radius: 18px;
   background: #fbfaff; cursor: pointer; font: inherit; color: inherit;
